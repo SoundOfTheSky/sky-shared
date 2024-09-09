@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 
 import { TableDefaults } from './db';
-import { DBNumber, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
+import { DBDate, DBNumber, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
 
 export const srs = [2, 4, 8, 23, 47, 167, 335, 719, 2879];
 
@@ -12,16 +12,14 @@ export const ThemeT = TypeCompiler.Compile(
     title: DBString(),
   }),
 );
-
-export type Theme = TableDefaults & {
+export type DisabledTheme = TableDefaults & {
   title: string;
 };
-
-export type UserTheme = Theme & {
+export type EnabledTheme = DisabledTheme & {
   lessons: number[];
   reviews: Record<string, number[]>;
 };
-
+export type Theme = DisabledTheme | EnabledTheme;
 export type ThemeDTO = GetTypeFromCompiled<typeof ThemeT>;
 
 // === Subjects ===
@@ -31,98 +29,69 @@ export const SubjectT = TypeCompiler.Compile(
     themeId: DBNumber(),
   }),
 );
-
+export type SubjectDTO = GetTypeFromCompiled<typeof SubjectT>;
 export type Subject = TableDefaults &
   SubjectDTO & {
-    title: string;
-    themeId: string;
     questionIds: number[];
     userSubjectId?: number;
   };
 
-export type SubjectDTO = GetTypeFromCompiled<typeof SubjectT>;
-
 // === User subjects ===
 export const UserSubjectT = TypeCompiler.Compile(
   Type.Object({
-    subjectId: DBNumber(),
     nextReview: Type.Optional(DBNumber()),
     stage: Type.Optional(DBNumber()),
+    subjectId: DBNumber(),
+    userId: DBNumber(),
   }),
 );
-
-export type UserSubject = TableDefaults & {
-  userId: number;
-  subjectId: number;
-  stage: number;
-  nextReview?: number | null;
-};
-
 export type UserSubjectDTO = GetTypeFromCompiled<typeof UserSubjectT>;
+export type UserSubject = TableDefaults & UserSubjectDTO;
 
 // === Questions ===
 export const QuestionT = TypeCompiler.Compile(
   Type.Object({
-    answers: DBStringArray(),
-    question: DBString(1, 2048),
-    description: DBString(1, 2048),
-    subjectId: DBNumber(),
     alternateAnswers: Type.Optional(
       Type.Record(DBString(), DBString(), {
         minProperties: 0,
         maxProperties: 8,
       }),
     ),
+    answers: DBStringArray(),
     choose: Type.Optional(Type.Boolean()),
+    description: DBString(1, 2048),
+    question: DBString(1, 2048),
+    subjectId: DBNumber(),
   }),
 );
-
-export type Question = TableDefaults & {
-  answers: string[];
-  question: string;
-  description: string;
-  subjectId: number;
-  alternateAnswers?: Record<string, string>;
-  choose?: boolean;
-  userQuestionId?: number;
-};
-
 export type QuestionDTO = GetTypeFromCompiled<typeof QuestionT>;
+export type Question = TableDefaults &
+  QuestionDTO & {
+    userQuestionId?: number;
+  };
 
 // === User questions ===
 export const UserQuestionT = TypeCompiler.Compile(
   Type.Object({
-    questionId: DBNumber(),
     note: Type.Optional(DBString()),
+    questionId: DBNumber(),
     synonyms: Type.Optional(DBStringArray()),
+    userId: DBNumber(),
   }),
 );
-
-export type UserQuestion = TableDefaults & {
-  userId: number;
-  questionId: number;
-  note?: string;
-  synonyms?: string[];
-};
-
 export type UserQuestionDTO = GetTypeFromCompiled<typeof UserQuestionT>;
+export type UserQuestion = TableDefaults & UserQuestionDTO;
 
 // === User asnwers ===
 export const UserAnswerT = TypeCompiler.Compile(
   Type.Object({
-    correct: Type.Boolean(),
-    subjectId: DBNumber(),
     answers: DBStringArray(),
+    correct: Type.Boolean(),
+    created: DBDate(),
+    subjectId: DBNumber(),
     took: DBNumber(),
+    userId: DBNumber(),
   }),
 );
-
-export type UserAnswer = TableDefaults & {
-  correct: boolean;
-  subjectId: number;
-  userId: number;
-  answers: string[];
-  took: number;
-};
-
 export type UserAnswerDTO = GetTypeFromCompiled<typeof UserAnswerT>;
+export type UserAnswer = TableDefaults & UserAnswerDTO;

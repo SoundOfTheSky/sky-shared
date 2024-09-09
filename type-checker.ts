@@ -9,9 +9,15 @@ export const DBString = (min = 1, max = 255) =>
   });
 
 export const DBNumber = () =>
-  Type.String({
+  Type.Number({
     minimum: 0,
     maximum: Number.MAX_SAFE_INTEGER,
+  });
+
+export const DBDate = () =>
+  Type.Date({
+    minimumTimestamp: 0,
+    maximumTimestamp: Number.MAX_SAFE_INTEGER,
   });
 
 export const DBStringArray = (min = 0, max = 8) =>
@@ -25,3 +31,9 @@ export const DBStringArray = (min = 0, max = 8) =>
       maxItems: max,
     },
   );
+export const DBDefaults = () =>
+  Type.Object({
+    id: DBNumber(),
+    created: DBDate(),
+    updated: DBDate(),
+  });
