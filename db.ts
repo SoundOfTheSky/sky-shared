@@ -1,7 +1,7 @@
 export type TableDefaults = {
   id: number;
-  created: string | Date;
-  updated: string | Date;
+  created: string;
+  updated: string;
 };
 export type TableDTO<T> = Omit<T, keyof TableDefaults>;
 export type Changes = {
