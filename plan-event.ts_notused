@@ -4,7 +4,7 @@ import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { TableDefaults, TableDTO } from './db';
 import { DBNumber, DBString, GetTypeFromCompiled } from './type-checker';
 
-export enum PlanEventStatus {
+export enum PLAN_EVENT_STATUS {
   TODO = 0,
   DONE = 1,
   FAILED = 2,
@@ -54,7 +54,7 @@ export type PlanEventOccurance = TableDefaults & {
   userId: number;
   planEventId: number;
   start: number; // unix minutes
-  status: PlanEventStatus;
+  status: PLAN_EVENT_STATUS;
 };
 
 export type PlanEventOccuranceDTO = TableDTO<PlanEventOccurance>;

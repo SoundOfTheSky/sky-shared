@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 
 import { TableDefaults } from './db';
-import { DBDate, DBNumber, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
+import { DBNumber, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
 
 export const srs = [2, 4, 8, 23, 47, 167, 335, 719, 2879];
 
@@ -87,11 +87,11 @@ export const StudyAnswerT = TypeCompiler.Compile(
   Type.Object({
     answers: DBStringArray(),
     correct: Type.Boolean(),
-    created: DBDate(),
+    created: DBString(),
     subjectId: DBNumber(),
     took: DBNumber(),
     userId: DBNumber(),
   }),
 );
 export type StudyAnswerDTO = GetTypeFromCompiled<typeof StudyAnswerT>;
-export type StudyAnswer = TableDefaults & StudyAnswerDTO;
+export type StudyAnswer = { id: number; themeId: number; updated: string } & StudyAnswerDTO;
