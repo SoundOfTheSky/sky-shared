@@ -85,7 +85,7 @@ export type StudyUserQuestion = TableDefaults & StudyUserQuestionDTO;
 // === Study answers ===
 export const StudyAnswerT = TypeCompiler.Compile(
   Type.Object({
-    answers: DBStringArray(),
+    answers: Type.Optional(DBStringArray()),
     correct: Type.Boolean(),
     created: DBString(),
     subjectId: DBNumber(),
