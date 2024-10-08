@@ -37,3 +37,5 @@ export const DBDefaults = () =>
     created: DBDate(),
     updated: DBDate(),
   });
+
+export const DBOptional = <T extends TSchema>(schema: T) => Type.Optional(Type.Union([schema, Type.Null()] as const));

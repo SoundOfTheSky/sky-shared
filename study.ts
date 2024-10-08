@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 
 import { TableDefaults } from './db';
-import { DBNumber, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
+import { DBNumber, DBOptional, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
 
 export const srs = [2, 4, 8, 23, 47, 167, 335, 719, 2879];
 
@@ -39,8 +39,8 @@ export type StudySubject = TableDefaults &
 // === User subjects ===
 export const StudyUserSubjectT = TypeCompiler.Compile(
   Type.Object({
-    nextReview: Type.Optional(DBNumber()),
-    stage: Type.Optional(DBNumber()),
+    nextReview: DBOptional(DBNumber()),
+    stage: DBOptional(DBNumber()),
     subjectId: DBNumber(),
     userId: DBNumber(),
   }),
@@ -51,14 +51,14 @@ export type StudyUserSubject = TableDefaults & StudyUserSubjectDTO;
 // === Questions ===
 export const StudyQuestionT = TypeCompiler.Compile(
   Type.Object({
-    alternateAnswers: Type.Optional(
+    alternateAnswers: DBOptional(
       Type.Record(DBString(), DBString(), {
         minProperties: 0,
         maxProperties: 8,
       }),
     ),
     answers: DBStringArray(),
-    choose: Type.Optional(Type.Boolean()),
+    choose: DBOptional(Type.Boolean()),
     description: DBString(1, 2048),
     question: DBString(1, 2048),
     subjectId: DBNumber(),
@@ -73,9 +73,9 @@ export type StudyQuestion = TableDefaults &
 // === User questions ===
 export const StudyUserQuestionT = TypeCompiler.Compile(
   Type.Object({
-    note: Type.Optional(DBString()),
+    note: DBOptional(DBString()),
     questionId: DBNumber(),
-    synonyms: Type.Optional(DBStringArray()),
+    synonyms: DBOptional(DBStringArray()),
     userId: DBNumber(),
   }),
 );
@@ -85,7 +85,7 @@ export type StudyUserQuestion = TableDefaults & StudyUserQuestionDTO;
 // === Study answers ===
 export const StudyAnswerT = TypeCompiler.Compile(
   Type.Object({
-    answers: Type.Optional(DBStringArray()),
+    answers: DBOptional(DBStringArray()),
     correct: Type.Boolean(),
     created: DBString(),
     subjectId: DBNumber(),
