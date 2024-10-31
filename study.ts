@@ -2,7 +2,13 @@ import { Type } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 
 import { TableDefaults } from './db';
-import { DBNumber, DBOptional, DBString, DBStringArray, GetTypeFromCompiled } from './type-checker';
+import {
+  DBNumber,
+  DBOptional,
+  DBString,
+  DBStringArray,
+  GetTypeFromCompiled,
+} from './type-checker';
 
 export const srs = [2, 4, 8, 23, 47, 167, 335, 719, 2879];
 
@@ -79,7 +85,9 @@ export const StudyUserQuestionT = TypeCompiler.Compile(
     userId: DBNumber(),
   }),
 );
-export type StudyUserQuestionDTO = GetTypeFromCompiled<typeof StudyUserQuestionT>;
+export type StudyUserQuestionDTO = GetTypeFromCompiled<
+  typeof StudyUserQuestionT
+>;
 export type StudyUserQuestion = TableDefaults & StudyUserQuestionDTO;
 
 // === Study answers ===
@@ -94,4 +102,8 @@ export const StudyAnswerT = TypeCompiler.Compile(
   }),
 );
 export type StudyAnswerDTO = GetTypeFromCompiled<typeof StudyAnswerT>;
-export type StudyAnswer = { id: number; themeId: number; updated: string } & StudyAnswerDTO;
+export type StudyAnswer = {
+  id: number;
+  themeId: number;
+  updated: string;
+} & StudyAnswerDTO;

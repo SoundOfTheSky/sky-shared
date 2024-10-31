@@ -1,7 +1,12 @@
 import { Static, TSchema, Type } from '@sinclair/typebox';
-import { TypeCheck } from '@sinclair/typebox/compiler';
+import {
+  TypeCheck,
+  ValueError,
+  ValueErrorIterator,
+} from '@sinclair/typebox/compiler';
 
-export type GetTypeFromCompiled<C extends TypeCheck<TSchema>> = C extends TypeCheck<infer T> ? Static<T> : unknown;
+export type GetTypeFromCompiled<C extends TypeCheck<TSchema>> =
+  C extends TypeCheck<infer T> ? Static<T> : unknown;
 export const DBString = (min = 1, max = 255) =>
   Type.String({
     minLength: min,
@@ -38,4 +43,16 @@ export const DBDefaults = () =>
     updated: DBDate(),
   });
 
-export const DBOptional = <T extends TSchema>(schema: T) => Type.Optional(Type.Union([schema, Type.Null()] as const));
+export const DBOptional = <T extends TSchema>(schema: T) =>
+  Type.Optional(Type.Union([schema, Type.Null()] as const));
+
+export class TypeCheckerError extends Error {
+  public errors: ValueError[];
+  public constructor(data: ValueErrorIterator) {
+    const errors = [...data];
+    super(
+      `Validation error: ${errors.map((x) => `${x.path} ${x.message}`).join('\n')}`,
+    );
+    this.errors = [...data];
+  }
+}
