@@ -27,6 +27,7 @@ export const StorageFileT = TypeCompiler.Compile(
     userId: Type.Optional(DBNumber()),
     size: DBNumber(),
     path: DBString(),
+    name: DBString(),
     hash: DBString(),
   }),
 )
