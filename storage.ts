@@ -3,7 +3,11 @@ import { TypeCompiler } from '@sinclair/typebox/compiler'
 import { RequiredKey } from '@softsky/utils'
 
 import { TableDefaults } from '@/sky-shared/database'
-import { DBNumber, DBString, GetTypeFromCompiled } from '@/sky-shared/type-checker'
+import {
+  DBNumber,
+  DBString,
+  GetTypeFromCompiled,
+} from '@/sky-shared/type-checker'
 
 // === Storage ===
 export const UserStorageT = TypeCompiler.Compile(
@@ -29,9 +33,8 @@ export const StorageFileT = TypeCompiler.Compile(
     path: DBString(),
     name: DBString(),
     hash: DBString(),
+    status: Type.Enum({ NOT_UPLOADED: 0, DEFAULT: 1, FOLDER: 2 }),
   }),
 )
 export type StorageFileDTO = GetTypeFromCompiled<typeof StorageFileT>
-export type StorageFile = TableDefaults & RequiredKey<StorageFileDTO, 'userId'> & {
-  status: StorageFileStatus
-}
+export type StorageFile = TableDefaults & RequiredKey<StorageFileDTO, 'userId'>

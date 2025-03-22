@@ -1,6 +1,7 @@
 import { Static, TSchema, Type } from '@sinclair/typebox'
 import {
   TypeCheck,
+  TypeCompiler,
   ValueError,
   ValueErrorIterator,
 } from '@sinclair/typebox/compiler'
@@ -51,8 +52,11 @@ export class TypeCheckerError extends Error {
   public constructor(data: ValueErrorIterator) {
     const errors = [...data]
     super(
-      `Validation error: ${errors.map(x => `${x.path} ${x.message}`).join('\n')}`,
+      `Validation error: ${errors.map((x) => `${x.path} ${x.message}`).join('\n')}`,
     )
     this.errors = [...data]
   }
 }
+
+export const TDBString = TypeCompiler.Compile(DBString())
+export const TDBNumber = TypeCompiler.Compile(DBNumber())
