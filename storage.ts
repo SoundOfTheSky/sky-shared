@@ -32,7 +32,7 @@ export const StorageFileT = TypeCompiler.Compile(
     size: DBNumber(),
     path: DBString(),
     name: DBString(),
-    hash: DBString(),
+    hash: Type.Optional(DBString()),
     status: Type.Enum({ NOT_UPLOADED: 0, DEFAULT: 1, FOLDER: 2 }),
   }),
 )
