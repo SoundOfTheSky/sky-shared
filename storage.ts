@@ -30,7 +30,7 @@ export const StorageFileT = TypeCompiler.Compile(
   Type.Object({
     userId: Type.Optional(DBNumber()),
     size: DBNumber(),
-    path: DBString(),
+    path: DBString(0),
     name: DBString(),
     hash: Type.Optional(DBString()),
     status: Type.Enum({ NOT_UPLOADED: 0, DEFAULT: 1, FOLDER: 2 }),
