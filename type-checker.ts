@@ -8,6 +8,7 @@ import {
 
 export type GetTypeFromCompiled<C extends TypeCheck<TSchema>> =
   C extends TypeCheck<infer T> ? Static<T> : unknown
+
 export const DBString = (min = 1, max = 255) =>
   Type.String({
     minLength: min,
@@ -39,7 +40,7 @@ export const DBStringArray = (min = 0, max = 8) =>
   )
 export const DBDefaults = () =>
   Type.Object({
-    id: DBNumber(),
+    id: Type.String(),
     created: DBDate(),
     updated: DBDate(),
   })

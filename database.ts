@@ -1,9 +1,37 @@
-export type TableDefaults = {
-  id: number
-  created: string
-  updated: string
+import { UUID } from '@softsky/utils'
+
+export type DefaultSchema = {
+  _id: string
+  created: Date
+  updated: Date
 }
-export type Changes = {
-  changes: number
-  lastInsertRowid: number | bigint
+
+export type QuerySuffix = '=' | '<' | '>'
+
+export type QueryKeys<T> = {
+  [K in keyof T & string as `${K}${QuerySuffix}`]?: T[K]
+}
+
+export type DatabaseConnector<T extends DefaultSchema> = {
+  get: (_id: string) => Promise<T | undefined>
+  create: (data: T) => Promise<void>
+  createMany: (data: T[]) => Promise<void>
+  delete: (_id: string) => Promise<void>
+  deleteMany: (query: QueryKeys<T>, index?: string) => Promise<void>
+  cursor: (query: QueryKeys<T>, index?: string) => AsyncGenerator<T>
+  getAll: (query: QueryKeys<T>, index?: string) => Promise<T[]>
+  update: (_id: string, fields: Partial<T>) => Promise<void>
+  updateMany: (
+    query: QueryKeys<T>,
+    fields: Partial<T>,
+    index?: string,
+  ) => Promise<void>
+}
+
+export function getDefaultFields(): DefaultSchema {
+  return {
+    _id: UUID(),
+    created: new Date(),
+    updated: new Date(),
+  }
 }
