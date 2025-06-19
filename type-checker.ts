@@ -1,10 +1,10 @@
 import { Static, TSchema, Type } from '@sinclair/typebox'
 import {
   TypeCheck,
-  TypeCompiler,
   ValueError,
   ValueErrorIterator,
 } from '@sinclair/typebox/compiler'
+import { ValidationError } from '@softsky/utils'
 
 export type GetTypeFromCompiled<C extends TypeCheck<TSchema>> =
   C extends TypeCheck<infer T> ? Static<T> : unknown
@@ -45,19 +45,28 @@ export const DBDefaults = () =>
     updated: DBDate(),
   })
 
-export const DBOptional = <T extends TSchema>(schema: T) =>
-  Type.Optional(Type.Union([schema, Type.Null()] as const))
-
-export class TypeCheckerError extends Error {
+export class TypeCheckerError extends ValidationError {
   public errors: ValueError[]
   public constructor(data: ValueErrorIterator) {
     const errors = [...data]
-    super(
-      `Validation error: ${errors.map((x) => `${x.path} ${x.message}`).join('\n')}`,
-    )
+    super(errors.map((x) => `${x.path} ${x.message}`).join('\n'))
     this.errors = [...data]
   }
 }
 
-export const TDBString = TypeCompiler.Compile(DBString())
-export const TDBNumber = TypeCompiler.Compile(DBNumber())
+export function hasID(body: unknown): body is { _id: string } {
+  return (
+    body !== null &&
+    typeof body === 'object' &&
+    '_id' in body &&
+    typeof body._id === 'string' &&
+    body._id.length === 30
+  )
+}
+
+export function assertType<T extends TSchema>(
+  T: TypeCheck<T>,
+  value: unknown,
+): asserts value is Static<T> {
+  if (!T.Check(value)) throw new TypeCheckerError(T.Errors(value))
+}

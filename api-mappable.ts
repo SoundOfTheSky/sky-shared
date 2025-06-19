@@ -1,5 +1,8 @@
+import { ValidationError } from '@softsky/utils'
+
 import { SessionPayload } from '@/sky-shared/session'
 
+// NO PATCH OR OPTIONS
 export type APIMappableHandlerMethods = 'GET' | 'DELETE' | 'POST' | 'PUT'
 export type APIMappableHandlerOptions<T = undefined> = {
   /** User session. Decoded JWT */
@@ -24,3 +27,11 @@ export type APIMappableHandlerOptions<T = undefined> = {
 export type APIMappableHandler<T = undefined> = (
   data: APIMappableHandlerOptions<T>,
 ) => unknown
+
+export class NotFoundError extends ValidationError {
+  public override name = 'NotFound'
+}
+
+export class NotAllowedError extends ValidationError {
+  public override name = 'NotAllowed'
+}

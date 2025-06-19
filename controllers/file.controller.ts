@@ -2,15 +2,19 @@ import { Type } from '@sinclair/typebox'
 import { TypeCompiler } from '@sinclair/typebox/compiler'
 import { ValidationError } from '@softsky/utils'
 
-import { APIMappableHandlerOptions } from '@/sky-shared/api-mappable'
+import {
+  APIMappableHandlerOptions,
+  NotFoundError,
+} from '@/sky-shared/api-mappable'
 import {
   DatabaseConnector,
   DefaultSchema,
   getDefaultFields,
   QueryKeys,
 } from '@/sky-shared/database'
-import { checkPermissions } from '@/sky-shared/session'
+import { assertPermissions } from '@/sky-shared/session'
 import {
+  assertType,
   DBNumber,
   DBString,
   GetTypeFromCompiled,
@@ -54,10 +58,9 @@ export abstract class FileController {
     body,
     session,
   }: APIMappableHandlerOptions): Promise<void> {
-    checkPermissions(session, ['FILES'])
-    if (!FileT.Check(body))
-      throw new ValidationError(JSON.stringify([...FileT.Errors(body)]))
-    if (body.userId !== session.user!._id) checkPermissions(session, ['ADMIN'])
+    assertPermissions(session, ['FILES'])
+    assertType(FileT, body)
+    if (body.userId !== session.user._id) assertPermissions(session, ['ADMIN'])
     body.status = await this.getStatusByHash(body.hash)
     await this.createFoldersForPath(
       body.userId,
@@ -71,15 +74,15 @@ export abstract class FileController {
     session,
     body,
   }: APIMappableHandlerOptions) {
-    checkPermissions(session, ['FILES'])
+    assertPermissions(session, ['FILES'])
     const _id = parameters?.file
-    if (!_id) throw new ValidationError('NOT_FOUND')
+    if (!_id) throw new NotFoundError()
     if (!FileT.Check(body))
       throw new ValidationError(JSON.stringify([...FileT.Errors(body)]))
     const existing = await this.database.get(_id)
-    if (!existing) throw new ValidationError('NOT_FOUND')
-    if (existing.userId !== session.user!._id)
-      checkPermissions(session, ['ADMIN'])
+    if (!existing) throw new NotFoundError()
+    if (existing.userId !== session.user._id)
+      assertPermissions(session, ['ADMIN'])
     if (body.hash !== existing.hash) {
       body.status = await this.getStatusByHash(existing.hash)
       await this.deleteBinaryIfOneLeft(existing.hash)
@@ -93,16 +96,16 @@ export abstract class FileController {
   }
 
   public async delete({ parameters, session }: APIMappableHandlerOptions) {
-    checkPermissions(session, ['FILES'])
+    assertPermissions(session, ['FILES'])
     const _id = parameters?.file
-    if (!_id) throw new ValidationError('NOT_FOUND')
+    if (!_id) throw new NotFoundError()
     const item = await this.database.get(_id)
-    if (!item) throw new ValidationError('NOT FOUND')
-    if (item.userId !== session.user!._id) checkPermissions(session, ['ADMIN'])
+    if (!item) throw new NotFoundError()
+    if (item.userId !== session.user._id) assertPermissions(session, ['ADMIN'])
     if (item.status === FileStatus.FOLDER)
       for (const file of await this.database.getAll({
         'path=': `${item.path}/${item.name}`,
-        'userId=': session.user!._id,
+        'userId=': session.user._id,
       }))
         await this.delete({
           session,
@@ -113,23 +116,23 @@ export abstract class FileController {
   }
 
   public async get({ parameters, session }: APIMappableHandlerOptions) {
-    checkPermissions(session, ['FILES'])
+    assertPermissions(session, ['FILES'])
     const _id = parameters?.file
     if (!_id) return
     const item = await this.database.get(_id)
     if (
       !item ||
-      (item.userId !== session.user!._id &&
-        !session.user!.permissions.includes('ADMIN'))
+      (item.userId !== session.user._id &&
+        !session.user.permissions.includes('ADMIN'))
     )
       return
     return item
   }
 
   public getAll({ query = {}, session }: APIMappableHandlerOptions) {
-    checkPermissions(session, ['FILES'])
-    if (!session.user!.permissions.includes('ADMIN'))
-      query.userId = session.user!._id
+    assertPermissions(session, ['FILES'])
+    if (!session.user.permissions.includes('ADMIN'))
+      query.userId = session.user._id
     return this.database.getAll(query as QueryKeys<File>)
   }
 
@@ -138,7 +141,7 @@ export abstract class FileController {
     body,
     parameters,
   }: APIMappableHandlerOptions<ReadableStream<Uint8Array>>) {
-    checkPermissions(session, ['FILES'])
+    assertPermissions(session, ['FILES'])
     const hash = parameters?.file
     if (!hash) throw new ValidationError('WRONG_HASH')
     let calculatedHash = ''

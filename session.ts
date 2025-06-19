@@ -1,6 +1,7 @@
-import { RequiredKey, ValidationError } from '@softsky/utils'
+import { RequiredKey } from '@softsky/utils'
 
-import { User } from '@/sky-shared/user.service'
+import { NotAllowedError } from '@/sky-shared/api-mappable'
+import { User } from '@/sky-shared/controllers/user.controller'
 
 export type SessionBody = {
   user?: Pick<User, '_id' | 'status' | 'permissions'>
@@ -28,14 +29,13 @@ export function extractJWTPayload(token: string) {
   return JSON.parse(jsonPayload) as SessionPayload
 }
 
-export function checkPermissions(
+export function assertPermissions(
   payload: SessionPayload,
-  permissions: string[],
-): payload is LoggedInSessionPayload {
+  permissions?: string[],
+): asserts payload is LoggedInSessionPayload {
   if (
     !payload.user ||
-    permissions.some((x) => !payload.user!.permissions.includes(x))
+    permissions?.some((x) => !payload.user!.permissions.includes(x))
   )
-    throw new ValidationError('NOT_ALLOWED')
-  return true
+    throw new NotAllowedError()
 }

@@ -2,15 +2,18 @@ import { Type } from '@sinclair/typebox'
 import { TypeCompiler } from '@sinclair/typebox/compiler'
 import { ValidationError } from '@softsky/utils'
 
-import { APIMappableHandlerOptions } from '@/sky-shared/api-mappable'
+import {
+  APIMappableHandlerOptions,
+  NotFoundError,
+} from '@/sky-shared/api-mappable'
 import {
   DatabaseConnector,
   DefaultSchema,
   getDefaultFields,
   QueryKeys,
 } from '@/sky-shared/database'
-import { checkPermissions } from '@/sky-shared/session'
-import { DBString, GetTypeFromCompiled } from '@/sky-shared/type-checker'
+import { assertPermissions } from '@/sky-shared/session'
+import { assertType, DBString, hasID } from '@/sky-shared/type-checker'
 
 export enum UserStatus {
   DEFAULT = 0,
@@ -23,7 +26,7 @@ export type User = DefaultSchema & {
   status: UserStatus
 }
 
-export const UserT = TypeCompiler.Compile(
+export const UserCreateT = TypeCompiler.Compile(
   Type.Object({
     username: Type.String({
       pattern: '/^[a-z0-9_-]{3,16}$/',
@@ -32,20 +35,36 @@ export const UserT = TypeCompiler.Compile(
   }),
 )
 
-export type UserDTO = GetTypeFromCompiled<typeof UserT>
+export class UserController<U extends User = User> {
+  public constructor(protected database: DatabaseConnector<U>) {}
 
-export abstract class UserController {
-  public constructor(protected database: DatabaseConnector<User>) {}
+  public async delete({ parameters, session }: APIMappableHandlerOptions) {
+    assertPermissions(session)
+    const _id = parameters?.user
+    if (!_id) throw new NotFoundError()
+    const item = await this.database.get(_id)
+    if (!item) throw new NotFoundError()
+    if (item._id !== session.user._id) assertPermissions(session, ['ADMIN'])
+    return this.database.delete(_id)
+  }
 
-  public async create({ body }: APIMappableHandlerOptions): Promise<void> {
-    if (!UserT.Check(body))
-      throw new ValidationError(JSON.stringify([...UserT.Errors(body)]))
-    await this.database.create({
-      ...body,
-      ...getDefaultFields(),
-      permissions: [],
-      status: UserStatus.DEFAULT,
-    })
+  public async get({ parameters, session }: APIMappableHandlerOptions) {
+    assertPermissions(session)
+    const _id = parameters?.user
+    if (!_id) throw new NotFoundError()
+    const item = await this.database.get(_id)
+    if (
+      !item ||
+      (item._id !== session.user._id &&
+        !session.user.permissions.includes('ADMIN'))
+    )
+      throw new NotFoundError()
+    return item
+  }
+
+  public getAll({ query = {}, session }: APIMappableHandlerOptions) {
+    assertPermissions(session, ['ADMIN'])
+    return this.database.getAll(query as QueryKeys<U>)
   }
 
   public async update({
@@ -53,44 +72,32 @@ export abstract class UserController {
     session,
     body,
   }: APIMappableHandlerOptions) {
-    if (!session.user) throw new ValidationError('NOT_ALLOWED')
+    assertPermissions(session)
     const _id = parameters?.user
-    if (!_id) throw new ValidationError('NOT_FOUND')
-    if (!UserT.Check(body))
-      throw new ValidationError(JSON.stringify([...UserT.Errors(body)]))
+    if (!_id) throw new NotFoundError()
+    assertType(UserCreateT, body)
     const existing = await this.database.get(_id)
-    if (!existing) throw new ValidationError('NOT_FOUND')
-    if (existing._id !== session.user._id) checkPermissions(session, ['ADMIN'])
-    // Add password
-    await this.database.update(_id, body)
+    if (!existing) throw new NotFoundError()
+    if (existing._id !== session.user._id) assertPermissions(session, ['ADMIN'])
+    await this.database.update(_id, {
+      username: body.username,
+    } as U)
   }
 
-  public async delete({ parameters, session }: APIMappableHandlerOptions) {
-    if (!session.user) throw new ValidationError('NOT_ALLOWED')
-    const _id = parameters?.user
-    if (!_id) throw new ValidationError('NOT_FOUND')
-    const item = await this.database.get(_id)
-    if (!item) throw new ValidationError('NOT FOUND')
-    if (item._id !== session.user._id) checkPermissions(session, ['ADMIN'])
-    return this.database.delete(_id)
-  }
-
-  public async get({ parameters, session }: APIMappableHandlerOptions) {
-    if (!session.user) throw new ValidationError('NOT_ALLOWED')
-    const _id = parameters?.user
-    if (!_id) return
-    const item = await this.database.get(_id)
-    if (
-      !item ||
-      (item._id !== session.user._id &&
-        !session.user.permissions.includes('ADMIN'))
-    )
-      return
-    return item
-  }
-
-  public getAll({ query = {}, session }: APIMappableHandlerOptions) {
-    checkPermissions(session, ['ADMIN'])
-    return this.database.getAll(query as QueryKeys<User>)
+  public async create({ body }: APIMappableHandlerOptions): Promise<User> {
+    assertType(UserCreateT, body)
+    const [exists] = await this.database.getAll({
+      'username=': body.username,
+    } as QueryKeys<U>)
+    if (exists) return exists
+    if (!hasID(body)) throw new ValidationError()
+    await this.database.create({
+      ...getDefaultFields(),
+      _id: body._id,
+      username: body.username,
+      permissions: [],
+      status: UserStatus.DEFAULT,
+    } as unknown as U)
+    return this.database.get(body._id) as Promise<User>
   }
 }
