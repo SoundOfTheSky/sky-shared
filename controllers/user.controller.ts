@@ -84,12 +84,13 @@ export class UserController<U extends User = User> {
     } as U)
   }
 
-  public async create({ body }: APIMappableHandlerOptions): Promise<User> {
+  /** If body without _id then it's login. Otherwise register. Returns signed token. */
+  public async create({ body }: APIMappableHandlerOptions): Promise<string> {
     assertType(UserCreateT, body)
     const [exists] = await this.database.getAll({
       'username=': body.username,
     } as QueryKeys<U>)
-    if (exists) return exists
+    if (exists) return 'OFFLINE_TOKEN'
     if (!hasID(body)) throw new ValidationError()
     await this.database.create({
       ...getDefaultFields(),
@@ -98,6 +99,6 @@ export class UserController<U extends User = User> {
       permissions: [],
       status: UserStatus.DEFAULT,
     } as unknown as U)
-    return this.database.get(body._id) as Promise<User>
+    return 'OFFLINE_TOKEN'
   }
 }

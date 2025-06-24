@@ -35,3 +35,7 @@ export class NotFoundError extends ValidationError {
 export class NotAllowedError extends ValidationError {
   public override name = 'NotAllowed'
 }
+
+export class OfflineError extends ValidationError {
+  public override name = 'OfflineError'
+}
