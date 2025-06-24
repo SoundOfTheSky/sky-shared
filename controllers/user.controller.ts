@@ -34,9 +34,7 @@ export type User = DefaultSchema & {
 export const UserCreateT = TypeCompiler.Compile(
   Type.Object({
     _id: Type.Optional(DBString(30)),
-    username: Type.String({
-      pattern: '/^[a-z0-9_-]{3,16}$/i',
-    }),
+    username: Type.RegExp(/^[a-z0-9_-]{3,16}$/i),
     password: DBString(),
   }),
 )
