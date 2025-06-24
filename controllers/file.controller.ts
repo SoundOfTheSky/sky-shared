@@ -60,7 +60,7 @@ export abstract class FileController {
   }: APIMappableHandlerOptions): Promise<void> {
     assertPermissions(session, ['FILES'])
     assertType(FileT, body)
-    if (body.userId !== session.user._id) assertPermissions(session, ['ADMIN'])
+    if (body.userId !== session._id) assertPermissions(session, ['ADMIN'])
     body.status = await this.getStatusByHash(body.hash)
     await this.createFoldersForPath(
       body.userId,
@@ -81,8 +81,7 @@ export abstract class FileController {
       throw new ValidationError(JSON.stringify([...FileT.Errors(body)]))
     const existing = await this.database.get(_id)
     if (!existing) throw new NotFoundError()
-    if (existing.userId !== session.user._id)
-      assertPermissions(session, ['ADMIN'])
+    if (existing.userId !== session._id) assertPermissions(session, ['ADMIN'])
     if (body.hash !== existing.hash) {
       body.status = await this.getStatusByHash(existing.hash)
       await this.deleteBinaryIfOneLeft(existing.hash)
@@ -101,11 +100,11 @@ export abstract class FileController {
     if (!_id) throw new NotFoundError()
     const item = await this.database.get(_id)
     if (!item) throw new NotFoundError()
-    if (item.userId !== session.user._id) assertPermissions(session, ['ADMIN'])
+    if (item.userId !== session._id) assertPermissions(session, ['ADMIN'])
     if (item.status === FileStatus.FOLDER)
       for (const file of await this.database.getAll({
         'path=': `${item.path}/${item.name}`,
-        'userId=': session.user._id,
+        'userId=': session._id,
       }))
         await this.delete({
           session,
@@ -122,8 +121,7 @@ export abstract class FileController {
     const item = await this.database.get(_id)
     if (
       !item ||
-      (item.userId !== session.user._id &&
-        !session.user.permissions.includes('ADMIN'))
+      (item.userId !== session._id && !session.permissions.includes('ADMIN'))
     )
       return
     return item
@@ -131,8 +129,7 @@ export abstract class FileController {
 
   public getAll({ query = {}, session }: APIMappableHandlerOptions) {
     assertPermissions(session, ['FILES'])
-    if (!session.user.permissions.includes('ADMIN'))
-      query.userId = session.user._id
+    if (!session.permissions.includes('ADMIN')) query.userId = session._id
     return this.database.getAll(query as QueryKeys<File>)
   }
 

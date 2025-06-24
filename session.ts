@@ -1,20 +1,12 @@
-import { RequiredKey } from '@softsky/utils'
-
 import { NotAllowedError } from '@/sky-shared/api-mappable'
 import { User } from '@/sky-shared/controllers/user.controller'
 
-export type SessionBody = {
-  user?: Pick<User, '_id' | 'status' | 'permissions'>
-  version: number
-}
-
-export type SessionPayload = SessionBody & {
+export type SessionPayload = Pick<User, '_id' | 'status' | 'permissions'> & {
   sub: string // JWT ID
   iat: number // Issued at
   exp: number // Exprires at
+  version: number // Delete if changed
 }
-
-export type LoggedInSessionPayload = RequiredKey<SessionPayload, 'user'>
 
 export function extractJWTPayload(token: string) {
   const base64 = token.split('.')[1]!.replaceAll('-', '+').replaceAll('_', '/')
@@ -30,12 +22,9 @@ export function extractJWTPayload(token: string) {
 }
 
 export function assertPermissions(
-  payload: SessionPayload,
+  session: SessionPayload | undefined,
   permissions?: string[],
-): asserts payload is LoggedInSessionPayload {
-  if (
-    !payload.user ||
-    permissions?.some((x) => !payload.user!.permissions.includes(x))
-  )
+): asserts session is SessionPayload {
+  if (!session || permissions?.some((x) => !session.permissions.includes(x)))
     throw new NotAllowedError()
 }

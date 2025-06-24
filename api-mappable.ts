@@ -6,7 +6,7 @@ import { SessionPayload } from '@/sky-shared/session'
 export type APIMappableHandlerMethods = 'GET' | 'DELETE' | 'POST' | 'PUT'
 export type APIMappableHandlerOptions<T = undefined> = {
   /** User session. Decoded JWT */
-  session: SessionPayload
+  session?: SessionPayload
   /** HTTP method */
   method?: APIMappableHandlerMethods
   /** URL query parameters like `?id=1&test=abc` */

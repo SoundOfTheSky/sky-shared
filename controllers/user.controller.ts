@@ -44,7 +44,7 @@ export class UserController<U extends User = User> {
     if (!_id) throw new NotFoundError()
     const item = await this.database.get(_id)
     if (!item) throw new NotFoundError()
-    if (item._id !== session.user._id) assertPermissions(session, ['ADMIN'])
+    if (item._id !== session._id) assertPermissions(session, ['ADMIN'])
     return this.database.delete(_id)
   }
 
@@ -55,8 +55,7 @@ export class UserController<U extends User = User> {
     const item = await this.database.get(_id)
     if (
       !item ||
-      (item._id !== session.user._id &&
-        !session.user.permissions.includes('ADMIN'))
+      (item._id !== session._id && !session.permissions.includes('ADMIN'))
     )
       throw new NotFoundError()
     return item
@@ -78,7 +77,7 @@ export class UserController<U extends User = User> {
     assertType(UserCreateT, body)
     const existing = await this.database.get(_id)
     if (!existing) throw new NotFoundError()
-    if (existing._id !== session.user._id) assertPermissions(session, ['ADMIN'])
+    if (existing._id !== session._id) assertPermissions(session, ['ADMIN'])
     await this.database.update(_id, {
       username: body.username,
     } as U)
