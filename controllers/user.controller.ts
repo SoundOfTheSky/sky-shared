@@ -13,7 +13,12 @@ import {
   QueryKeys,
 } from '@/sky-shared/database'
 import { assertPermissions } from '@/sky-shared/session'
-import { assertType, DBString, hasID } from '@/sky-shared/type-checker'
+import {
+  assertType,
+  DBString,
+  GetTypeFromCompiled,
+  hasID,
+} from '@/sky-shared/type-checker'
 
 export enum UserStatus {
   DEFAULT = 0,
@@ -28,12 +33,14 @@ export type User = DefaultSchema & {
 
 export const UserCreateT = TypeCompiler.Compile(
   Type.Object({
+    _id: Type.Optional(DBString(30)),
     username: Type.String({
-      pattern: '/^[a-z0-9_-]{3,16}$/',
+      pattern: '/^[a-z0-9_-]{3,16}$/i',
     }),
     password: DBString(),
   }),
 )
+export type UserCreateDTO = GetTypeFromCompiled<typeof UserCreateT>
 
 export class UserController<U extends User = User> {
   public constructor(protected database: DatabaseConnector<U>) {}
