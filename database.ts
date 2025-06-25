@@ -17,15 +17,11 @@ export type DatabaseConnector<T extends DefaultSchema> = {
   create: (data: T) => Promise<void>
   createMany: (data: T[]) => Promise<void>
   delete: (_id: string) => Promise<void>
-  deleteMany: (query: QueryKeys<T>, index?: string) => Promise<void>
-  cursor: (query: QueryKeys<T>, index?: string) => AsyncGenerator<T>
-  getAll: (query: QueryKeys<T>, index?: string) => Promise<T[]>
+  deleteMany: (query: QueryKeys<T>) => Promise<void>
+  cursor: (query: QueryKeys<T>) => AsyncGenerator<T>
+  getAll: (query: QueryKeys<T>) => Promise<T[]>
   update: (_id: string, fields: Partial<T>) => Promise<void>
-  updateMany: (
-    query: QueryKeys<T>,
-    fields: Partial<T>,
-    index?: string,
-  ) => Promise<void>
+  updateMany: (query: QueryKeys<T>, fields: Partial<T>) => Promise<void>
 }
 
 export function getDefaultFields(): DefaultSchema {
