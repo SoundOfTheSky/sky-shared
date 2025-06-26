@@ -1,6 +1,5 @@
 import { Type } from '@sinclair/typebox'
 import { TypeCompiler } from '@sinclair/typebox/compiler'
-import { ValidationError } from '@softsky/utils'
 
 import {
   APIMappableHandlerOptions,
@@ -9,15 +8,15 @@ import {
 import {
   DatabaseConnector,
   DefaultSchema,
-  getDefaultFields,
   QueryKeys,
 } from '@/sky-shared/database'
 import { assertPermissions } from '@/sky-shared/session'
 import {
   assertType,
-  DBString,
+  TypeString,
   GetTypeFromCompiled,
   hasID,
+  TypeDefaults,
 } from '@/sky-shared/type-checker'
 
 export enum UserStatus {
@@ -32,11 +31,13 @@ export type User = DefaultSchema & {
 }
 
 export const UserCreateT = TypeCompiler.Compile(
-  Type.Object({
-    _id: Type.Optional(DBString(30)),
-    username: Type.RegExp(/^[a-z0-9_-]{3,16}$/i),
-    password: DBString(),
-  }),
+  Type.Intersect([
+    Type.Partial(TypeDefaults()),
+    Type.Object({
+      username: Type.RegExp(/^[a-z0-9_-]{3,16}$/i),
+      password: TypeString(),
+    }),
+  ]),
 )
 export type UserCreateDTO = GetTypeFromCompiled<typeof UserCreateT>
 
@@ -85,6 +86,7 @@ export class UserController<U extends User = User> {
     if (existing._id !== session._id) assertPermissions(session, ['ADMIN'])
     await this.database.update(_id, {
       username: body.username,
+      updated: body.updated ?? new Date(),
     } as U)
   }
 
@@ -95,10 +97,11 @@ export class UserController<U extends User = User> {
       'username=': body.username,
     } as QueryKeys<U>)
     if (exists) return 'OFFLINE_TOKEN'
-    if (!hasID(body)) throw new ValidationError()
+    if (!hasID(body)) throw new NotFoundError()
     await this.database.create({
-      ...getDefaultFields(),
       _id: body._id,
+      created: body.created ?? new Date(),
+      updated: body.updated ?? new Date(),
       username: body.username,
       permissions: [],
       status: UserStatus.DEFAULT,

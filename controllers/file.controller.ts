@@ -15,8 +15,8 @@ import {
 import { assertPermissions } from '@/sky-shared/session'
 import {
   assertType,
-  DBNumber,
-  DBString,
+  TypeNumber,
+  TypeString,
   GetTypeFromCompiled,
 } from '@/sky-shared/type-checker'
 
@@ -39,11 +39,11 @@ export type File = DefaultSchema & {
 
 export const FileT = TypeCompiler.Compile(
   Type.Object({
-    userId: DBString(),
-    size: DBNumber(),
-    path: DBString(0),
-    name: DBString(),
-    hash: Type.Optional(DBString()),
+    userId: TypeString(),
+    size: TypeNumber(),
+    path: TypeString(0),
+    name: TypeString(),
+    hash: Type.Optional(TypeString()),
     status: Type.Enum({ NOT_UPLOADED: 0, DEFAULT: 1, FOLDER: 2 }),
   }),
 )
