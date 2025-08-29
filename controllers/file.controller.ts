@@ -18,6 +18,7 @@ import {
   TypeNumber,
   TypeString,
   GetTypeFromCompiled,
+  TypeDefaults,
 } from '@/sky-shared/type-checker'
 
 // === Types ===
@@ -29,7 +30,7 @@ export enum FileStatus {
 }
 
 export type File = DefaultSchema & {
-  userId: string
+  user: string
   size: number
   path: string
   name: string
@@ -37,22 +38,43 @@ export type File = DefaultSchema & {
   status: FileStatus
 }
 
-export const FileT = TypeCompiler.Compile(
-  Type.Object({
-    userId: TypeString(),
-    size: TypeNumber(),
-    path: TypeString(0),
-    name: TypeString(),
-    hash: Type.Optional(TypeString()),
-    status: Type.Enum({ NOT_UPLOADED: 0, DEFAULT: 1, FOLDER: 2 }),
-  }),
-)
-
 export type FileDTO = GetTypeFromCompiled<typeof FileT>
 
-// === Service ===
+export const FileT = TypeCompiler.Compile(
+  Type.Intersect([
+    Type.Partial(TypeDefaults()),
+    Type.Object({
+      user: TypeString(30),
+      size: TypeNumber(),
+      path: TypeString(0),
+      name: TypeString(),
+      hash: Type.Optional(TypeString()),
+      status: Type.Enum(FileStatus),
+    }),
+  ]),
+)
+
 export abstract class FileController {
   public constructor(protected database: DatabaseConnector<File>) {}
+
+  /** If body without _id then it's login. Otherwise register. Returns signed token. */
+  public async create({ body }: APIMappableHandlerOptions): Promise<string> {
+    assertType(UserCreateT, body)
+    const [exists] = await this.database.getAll({
+      'username=': body.username,
+    } as QueryKeys<U>)
+    if (exists) return 'OFFLINE_TOKEN'
+    if (!hasID(body)) throw new NotFoundError()
+    await this.database.create({
+      _id: body._id,
+      created: body.created ?? new Date(),
+      updated: body.updated ?? new Date(),
+      username: body.username,
+      permissions: [],
+      status: UserStatus.DEFAULT,
+    } as unknown as U)
+    return 'OFFLINE_TOKEN'
+  }
 
   public async create({
     body,
@@ -60,10 +82,14 @@ export abstract class FileController {
   }: APIMappableHandlerOptions): Promise<void> {
     assertPermissions(session, ['FILES'])
     assertType(FileT, body)
-    if (body.userId !== session._id) assertPermissions(session, ['ADMIN'])
+    if (body.user !== session._id) assertPermissions(session, ['ADMIN'])
+    const [exists] = await this.database.getAll({
+      'path=': body.path,
+      'name=': body.name,
+    })
     body.status = await this.getStatusByHash(body.hash)
     await this.createFoldersForPath(
-      body.userId,
+      body.user,
       body.path ? body.path.split('/') : [],
     )
     await this.database.create({ ...body, ...getDefaultFields() })
@@ -81,14 +107,14 @@ export abstract class FileController {
       throw new ValidationError(JSON.stringify([...FileT.Errors(body)]))
     const existing = await this.database.get(_id)
     if (!existing) throw new NotFoundError()
-    if (existing.userId !== session._id) assertPermissions(session, ['ADMIN'])
+    if (existing.user !== session._id) assertPermissions(session, ['ADMIN'])
     if (body.hash !== existing.hash) {
       body.status = await this.getStatusByHash(existing.hash)
       await this.deleteBinaryIfOneLeft(existing.hash)
     }
     if (existing.path !== body.path)
       await this.createFoldersForPath(
-        existing.userId,
+        existing.user,
         existing.path ? existing.path.split('/') : [],
       )
     await this.database.update(_id, body)
@@ -100,11 +126,11 @@ export abstract class FileController {
     if (!_id) throw new NotFoundError()
     const item = await this.database.get(_id)
     if (!item) throw new NotFoundError()
-    if (item.userId !== session._id) assertPermissions(session, ['ADMIN'])
+    if (item.user !== session._id) assertPermissions(session, ['ADMIN'])
     if (item.status === FileStatus.FOLDER)
       for (const file of await this.database.getAll({
         'path=': `${item.path}/${item.name}`,
-        'userId=': session._id,
+        'user=': session._id,
       }))
         await this.delete({
           session,
@@ -121,7 +147,7 @@ export abstract class FileController {
     const item = await this.database.get(_id)
     if (
       !item ||
-      (item.userId !== session._id && !session.permissions.includes('ADMIN'))
+      (item.user !== session._id && !session.permissions.includes('ADMIN'))
     )
       return
     return item
@@ -129,7 +155,7 @@ export abstract class FileController {
 
   public getAll({ query = {}, session }: APIMappableHandlerOptions) {
     assertPermissions(session, ['FILES'])
-    if (!session.permissions.includes('ADMIN')) query.userId = session._id
+    if (!session.permissions.includes('ADMIN')) query.user = session._id
     return this.database.getAll(query as QueryKeys<File>)
   }
 
@@ -165,7 +191,7 @@ export abstract class FileController {
     }
   }
 
-  protected async createFoldersForPath(userId: string, path: string[]) {
+  protected async createFoldersForPath(user: string, path: string[]) {
     let p = ''
     for (let index = 0; index < path.length; index++) {
       const folder = path[index]!
@@ -174,7 +200,7 @@ export abstract class FileController {
           .getAll({
             'path=': p,
             'name=': folder,
-            'userId=': userId,
+            'user=': user,
           })
           .then((x) => x.length === 0)
       )
@@ -182,7 +208,7 @@ export abstract class FileController {
           ...getDefaultFields(),
           name: folder,
           path: p,
-          userId,
+          user,
           size: 0,
           status: FileStatus.FOLDER,
         })

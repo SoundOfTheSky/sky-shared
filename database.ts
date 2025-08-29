@@ -5,6 +5,9 @@ export type DefaultSchema = {
   created: Date
   updated: Date
 }
+export type DefaultSchemaWithUser = DefaultSchema & {
+  user: string
+}
 
 export type QuerySuffix = '=' | '<' | '>'
 
